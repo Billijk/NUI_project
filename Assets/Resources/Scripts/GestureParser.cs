@@ -8,10 +8,12 @@ public class GestureParser : MonoBehaviour {
 	private const float GRAB_DISTANCE = 0.5f;
 	private const float GRAB_STRENGTH = 50f;
 	private const int HAND_LAYER_INDEX = 8;
+	private const float SLICE_VELOCITY_THRESHOLD = 1000f;
 
 	private HandController controller;
 	private MainControl main;
 
+	private bool inSlice;
 	private int lastGesture = -1;
 	private Leap.Vector LHBeginPosition;
 
@@ -23,6 +25,7 @@ public class GestureParser : MonoBehaviour {
 		// enable gestures
 		Controller leapController = controller.GetLeapController ();
 		leapController.EnableGesture (Gesture.GestureType.TYPESWIPE);
+		leapController.EnableGesture (Gesture.GestureType.TYPESCREENTAP);
 	}
 	
 	// Update is called once per frame
@@ -50,13 +53,6 @@ public class GestureParser : MonoBehaviour {
 				LHBeginPosition = null;
 			}
 
-			// grab
-			if (righthand != null && righthand.GrabStrength > GRAB_THRESHOLD) {
-				UpdateGrab (righthand);
-			} else {
-				main.RightHandRelease ();
-			}
-
 			// gestures
 			if (lastGesture != -1) {
 				Gesture gesture = frame.Gesture (lastGesture);
@@ -69,8 +65,50 @@ public class GestureParser : MonoBehaviour {
 						SwipeGesture swipeGesture = new SwipeGesture (gestrue);
 						lastGesture = gestrue.Id;
 						main.Swipe (swipeGesture.Direction, swipeGesture.Speed);
+					} else if (gestrue.Type == Gesture.GestureType.TYPE_SCREEN_TAP) {
+						ScreenTapGesture tapGesture = new ScreenTapGesture (gestrue);
+						lastGesture = gestrue.Id;
+						main.Tap ();
 					}
 				}
+			}
+
+			// parse right hand
+			if (righthand != null && righthand.Confidence > 0.3) {
+				// grab
+				if (righthand.GrabStrength > GRAB_THRESHOLD) {
+					UpdateGrab (righthand);
+				} else {
+					main.RightHandRelease ();
+				}
+
+				// pinch
+				if (righthand.PinchStrength > 0.2) {
+					main.RightHandPinch (righthand.PinchStrength);
+				}
+
+				// slice
+				if (!inSlice && righthand.PalmNormal.Roll < -1.7 && righthand.PalmNormal.Roll > -1.9// vertical
+				    && righthand.PalmVelocity.y < -SLICE_VELOCITY_THRESHOLD) {
+					inSlice = true;
+					main.RightHandSlice (new Plane (righthand.PalmNormal.ToUnity (), 
+						controller.transform.TransformPoint (righthand.PalmPosition.ToUnityScaled ())));
+				} else {
+					inSlice = false;
+				}
+					
+				// point
+				FingerList extended = righthand.Fingers.Extended ();
+				if (extended.Count == 1 && extended [0].Type == Finger.FingerType.TYPE_INDEX) {
+					Finger indexFinger = extended [0];
+					Vector target = indexFinger.StabilizedTipPosition - indexFinger.Direction * (100f / indexFinger.Direction.z);
+					main.RightHandPoint (target.x, target.y);
+				} else {
+					main.RightHandNotPoint ();
+				}
+			} else {
+				main.RightHandNotPoint ();
+				main.RightHandRelease ();
 			}
 		}
 	}
@@ -94,6 +132,14 @@ public class GestureParser : MonoBehaviour {
 			main.RightHandGrab (grabbed.gameObject);
 			//Vector3 delta = handPosition - grabbed.transform.position;
 			//grabbed.GetComponent<Rigidbody> ().AddForce (delta * GRAB_STRENGTH);
+		} else {
+			// ray cast
+			RaycastHit hit;
+			if (Physics.Raycast (handPosition, hand.PalmNormal.ToUnity (), out hit, 15f, layerMask)) {
+				main.RightHandGrab (hit.collider.gameObject);
+			}
+				
 		}
+
 	}
 }
