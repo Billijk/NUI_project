@@ -60,14 +60,14 @@ public class GestureParser : MonoBehaviour {
 					lastGesture = -1;
 			} else {
 				GestureList gestures = frame.Gestures ();
-				foreach (Gesture gestrue in gestures) {
-					if (gestrue.Type == Gesture.GestureType.TYPE_SWIPE) {
-						SwipeGesture swipeGesture = new SwipeGesture (gestrue);
-						lastGesture = gestrue.Id;
+				foreach (Gesture gesture in gestures) {
+					if (gesture.Type == Gesture.GestureType.TYPE_SWIPE) {
+						SwipeGesture swipeGesture = new SwipeGesture (gesture);
+						lastGesture = gesture.Id;
 						main.Swipe (swipeGesture.Direction, swipeGesture.Speed);
-					} else if (gestrue.Type == Gesture.GestureType.TYPE_SCREEN_TAP) {
-						ScreenTapGesture tapGesture = new ScreenTapGesture (gestrue);
-						lastGesture = gestrue.Id;
+					} else if (gesture.Type == Gesture.GestureType.TYPE_SCREEN_TAP) {
+						ScreenTapGesture tapGesture = new ScreenTapGesture (gesture);
+						lastGesture = gesture.Id;
 						main.Tap ();
 					}
 				}
