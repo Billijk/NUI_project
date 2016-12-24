@@ -137,8 +137,8 @@ public class GestureParser : MonoBehaviour {
 	private void UpdateGrab(Hand hand) {
 //		Collider grabbed = null;
 		Vector3 handPosition = controller.transform.TransformPoint(hand.PalmPosition.ToUnityScaled ());
-		Vector3 handPositionFor2d = hand.StabilizedPalmPosition.ToUnity ();
-		Vector2 handPosition2d = new Vector2 (handPositionFor2d.x, handPositionFor2d.y - BASIC_Y_POSITION_FOR_2D);
+		Vector handPositionFor2d = hand.StabilizedPalmPosition;
+		Vector2 handPosition2d = new Vector2 (handPositionFor2d.x, handPositionFor2d.y);
 		main.RightHandGrab (handPosition2d, handPosition);
 
 //		int layerMask = ~(1 << HAND_LAYER_INDEX);

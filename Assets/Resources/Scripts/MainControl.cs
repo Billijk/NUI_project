@@ -12,12 +12,17 @@ public class MainControl : MonoBehaviour {
 	private const float OBJECT_THRINK_LIMIT = 0.5f;
 	private const float OBJECT_ENLARGE_LIMIT = 4f;
 
+	private bool isEnable = true;
+
 	public Camera mainCamera;
 	public Image PointedPos;
 
 	// prefabs
 	public Transform cube;
 	public Transform sphere;
+
+	// slider
+	public ScrollControl sliderPanel;
 
 	// current active object
 	private GameObject active = null;
@@ -31,6 +36,9 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
+		if(!isEnable) {
+			return;
+		}
 		mainCamera.transform.RotateAround (Vector3.zero, Vector3.up, delta.x * CAMERA_ROTATE_SPEED);
 		transform.RotateAround(Vector3.zero, Vector3.up, delta.x * CAMERA_ROTATE_SPEED);
 		if (mainCamera.transform.eulerAngles.x > 5 && mainCamera.transform.eulerAngles.x < 85) {
@@ -50,21 +58,34 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void Swipe(Leap.Vector dir, float speed) {
+		Vector3 oldCamaraPos = mainCamera.transform.position;
+
 		bool horizontal = Mathf.Abs (dir.x) > Mathf.Abs (dir.y);
 		if (horizontal) {
-			if (dir.x > 0)
-				Instantiate (cube, new Vector3 (0, 2f, 0f), Quaternion.identity);
-			else
-				Instantiate (sphere, new Vector3 (0, 2f, 0f), Quaternion.identity);
+			if(dir.x > 0) {
+				sliderPanel.swipeSlider(0);
+			} else {
+				sliderPanel.swipeSlider(1);
+			}
 		}
-		
+		if(sliderPanel.getSliderStatus() != 1) {
+			isEnable = false;
+		} else {
+			isEnable = true;
+		}
 	}
 
 	public void Tap() {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Tap");
 	}
 
 	public void RightHandPinch(float pinchStrength) {
+		if(!isEnable) {
+			return;
+		}
 		if (active != null) {
 			if (pinchStrength > 0.9 && active.transform.localScale.magnitude > OBJECT_THRINK_LIMIT)
 				// shrink
@@ -76,30 +97,46 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void RightHandGrab(Vector2 pos2d, Vector3 pos3d) {
-//		if (active != null)
-//			active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Standard");
-//		active = grabbed;
-//		active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight
+		if(!isEnable) {
+			if(sliderPanel.getClick(pos2d, pos3d) != -1) {
+				Swipe(new Leap.Vector(-3, -1, 0), 1.0f);
+			}
+		}
 	}
 		
 	public void RightHandRelease() {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Release");
 	}
 
 	public void RightHandSlice(Plane plane) {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Slice");
 	}
 
 	public void RightHandPoint(Vector2 target) {
-		PointedPos.enabled = true;
-		PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
+		if(!isEnable) {
+			sliderPanel.movePointer(new Vector3(target.x, target.y));
+		}
+		//PointedPos.enabled = true;
+		//PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
 	}
 
 	public void RightHandNotPoint() {
+		if(!isEnable) {
+			return;
+		}
 		//PointedPos.enabled = false;
 	}
 
 	public void RightPalmMove(float delta) {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Palm Move " + delta.ToString());
 	}
 
