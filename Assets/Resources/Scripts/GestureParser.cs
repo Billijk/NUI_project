@@ -7,6 +7,7 @@ using Leap;
 public class GestureParser : MonoBehaviour {
 
 	private const float GRAB_THRESHOLD = 0.9f;
+	private const float DRAG_VELOCITY_THRESHOLD = 100f;
 	private const float BASIC_Y_POSITION_FOR_2D = 175f;
 	private const float THROW_VELOCITY_THRESHOLD = 500f;
 	private const float SLICE_VELOCITY_THRESHOLD = 900f;
@@ -70,7 +71,6 @@ public class GestureParser : MonoBehaviour {
 						lastGesture = gesture.Id;
 						main.Swipe (swipeGesture.Direction, swipeGesture.Speed);
 					} else if (gesture.Type == Gesture.GestureType.TYPE_SCREEN_TAP) {
-						ScreenTapGesture tapGesture = new ScreenTapGesture (gesture);
 						lastGesture = gesture.Id;
 						main.Tap ();
 					}
@@ -136,6 +136,12 @@ public class GestureParser : MonoBehaviour {
 
 	private void UpdateGrab(Hand hand) {
 		Vector3 handPosition = controller.transform.TransformPoint(hand.PalmPosition.ToUnityScaled ());
+
+		if (hand.PalmVelocity.Magnitude > DRAG_VELOCITY_THRESHOLD) {
+			Vector3 handVelocity = controller.transform.TransformDirection (hand.PalmVelocity.ToUnityScaled());
+			main.RightHandDrag (handPosition, handVelocity);
+		}
+
 		Vector handPositionFor2d = hand.StabilizedPalmPosition;
 		Vector2 handPosition2d = new Vector2 (handPositionFor2d.x, handPositionFor2d.y);
 		main.RightHandGrab (handPosition2d, handPosition);

@@ -21,17 +21,16 @@ public class MeshHelper {
 		return resultMesh;
 	}
 
-	public static GameObject ApplyMeshCollider(GameObject gameObject) {
+	public static void ApplyMeshCollider(GameObject gameObject) {
 		// first destroy automatically generated collider
 		Collider[] colliders = gameObject.GetComponents<Collider> ();
 		foreach(Collider c in colliders) {
 			GameObject.Destroy (c);
 		}
 		// replace with a mesh collider
-		gameObject.AddComponent<MeshCollider> ();
-		gameObject.GetComponent<MeshCollider> ().convex = true;
-		gameObject.GetComponent<MeshCollider> ().isTrigger = true;
-		gameObject.GetComponent<MeshCollider> ().sharedMesh = MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
-		return gameObject;
+		var newCollider = gameObject.AddComponent<MeshCollider> ();
+		newCollider.convex = true;
+		newCollider.isTrigger = true;
+		newCollider.sharedMesh = Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
 	}
 }

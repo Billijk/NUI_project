@@ -61,11 +61,11 @@ public class MainControl : MonoBehaviour {
 		}
 		active.transform.position = Vector3.zero;
 		active.transform.localScale = Vector3.one;
+		active.GetComponent<ObjectController>().init();
 		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
 		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
 		active.GetComponent<MeshFilter> ().mesh.Optimize ();
-		active = MeshHelper.ApplyMeshCollider (active);
-		active.GetComponent<ObjectController>().init();
+		MeshHelper.ApplyMeshCollider (active);
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
@@ -91,7 +91,6 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void Swipe(Leap.Vector dir, float speed) {
-		Vector3 oldCamaraPos = mainCamera.transform.position;
 
 		bool horizontal = Mathf.Abs (dir.x) > Mathf.Abs (dir.y);
 		if (horizontal) {
@@ -151,14 +150,17 @@ public class MainControl : MonoBehaviour {
 			if (grabbed != null) {
 				if (active != null && active != grabbed.gameObject) {
 					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
-				} else if (active != null) {
-					if (Vector3.Distance(pos3d, active.transform.position) > DRAG_THRESHOLD)
-						active.GetComponent<ObjectController>().moveTo(pos3d);
-				}
+				} 
 				active = grabbed.gameObject;
 				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
 			}
 
+		}
+	}
+
+	public void RightHandDrag(Vector3 pos3d, Vector3 v) {
+		if (active != null) {
+			active.GetComponent<ObjectController>().moveTo(pos3d);
 		}
 	}
 		

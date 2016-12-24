@@ -5,8 +5,8 @@ using System.Collections;
 public class SlicedColliderHandler : AbstractSliceHandler {
 	public override void handleSlice (GameObject[] results) {
 		// here I need to recalculate mesh collider to fit sliced object
-		foreach (GameObject obj in results) {
-			obj = MeshHelper.ApplyMeshCollider (obj);
+		for (int i = 0; i < results.Length; ++ i) {
+			MeshHelper.ApplyMeshCollider (results[i]);
 		}
 	}
 }
