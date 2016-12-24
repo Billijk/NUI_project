@@ -10,11 +10,12 @@ public class GestureParser : MonoBehaviour {
 	private const float BASIC_Y_POSITION_FOR_2D = 175f;
 	private const float THROW_VELOCITY_THRESHOLD = 500f;
 	private const float SLICE_VELOCITY_THRESHOLD = 900f;
-	private const float DOWNWARD_ANGLE_THRESHOLD = 0.1f;
+	private const float DOWNWARD_ANGLE_THRESHOLD = 0.3f;
 
 	private HandController controller;
 	private MainControl main;
 
+	private bool flipPalm = false;
 	private bool inSlice;
 	private bool inGrab;
 	private int lastGesture = -1;
@@ -121,14 +122,26 @@ public class GestureParser : MonoBehaviour {
 				}
 
 				// palm vertically move
-				if (righthand.GrabStrength == 0 && righthand.PalmNormal.AngleTo(Vector.Down) < DOWNWARD_ANGLE_THRESHOLD) {
+				if (righthand.GrabStrength <= 0.3f && 
+					righthand.PalmNormal.AngleTo(Vector.Down) < DOWNWARD_ANGLE_THRESHOLD) {
 					if (RHBeginPosition != null) {
-						main.RightPalmMove (righthand.PalmPosition.y - RHBeginPosition.y);
+						main.RightPalmMove(righthand.PalmPosition.y - RHBeginPosition.y);
 					} else {
 						RHBeginPosition = righthand.PalmPosition;
 					}
+
+					if(flipPalm) {
+						main.RightHandFlip();
+						flipPalm = false;
+					}
 				} else {
 					RHBeginPosition = null;
+				}
+
+				// palm flip
+				if(righthand.GrabStrength <= 0.3f &&
+				   righthand.PalmNormal.AngleTo(Vector.Up) < DOWNWARD_ANGLE_THRESHOLD) {
+					flipPalm = true;
 				}
 			}
 		}

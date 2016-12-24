@@ -206,7 +206,26 @@ public class MainControl : MonoBehaviour {
 		if(!isEnable) {
 			return;
 		}
-		Debug.Log ("Palm Move " + delta.ToString());
+		if(active != null) {
+			if(delta > 30.0f) {
+				active.transform.localScale = new Vector3(
+					active.transform.localScale.x,
+					active.transform.localScale.y * (1 + OBJECT_SCALING_SPEED),
+					active.transform.localScale.z
+				);
+			} else if(delta < -30.0f) {
+				active.transform.localScale = new Vector3(
+					active.transform.localScale.x,
+					active.transform.localScale.y * (1 - OBJECT_SCALING_SPEED),
+					active.transform.localScale.z
+				);
+			}
+		}
 	}
 
+	public void RightHandFlip() {
+		if(active != null) {
+			Destroy(active);
+		}
+	}
 }

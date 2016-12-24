@@ -9,8 +9,16 @@ public class ScrollControl : MonoBehaviour {
 	private float moveSpeed = 0.0f;
 	private float targetValue = 0.5f;
 
+	private float colorR = 0.0f;
+	private float colorG = 0.0f;
+	private float colorB = 0.0f;
 	public Scrollbar scrollBar;
 	public Image pointer;
+	public Image colorSelector;
+
+	public Image redMarker;
+	public Image greenMarker;
+	public Image blueMarker;
 
 	public Transform cube;
 	public Transform sphere;
@@ -73,17 +81,49 @@ public class ScrollControl : MonoBehaviour {
 			float x = target.x;
 			float y = target.y;
 
-			if(x <= -50 && x >= -250 && y <= 0 && y >= -200) {
-				onGeometryIcon = 1;
-			} else if(x >= 50 && x <= 250 && y <= 0 && y >= -200) {
-				onGeometryIcon = 2;
-			} else if(x >= -100 && x <= 100 && y >= 0 && y <= 200) {
-				onGeometryIcon = 0;
-			} else {
-				onGeometryIcon = -1;
+			if(sliderStatus == 0) {
+				if(x <= -50 && x >= -250 && y <= 0 && y >= -200) {
+					onGeometryIcon = 1;
+				} else if(x >= 50 && x <= 250 && y <= 0 && y >= -200) {
+					onGeometryIcon = 2;
+				} else if(x >= -100 && x <= 100 && y >= 0 && y <= 200) {
+					onGeometryIcon = 0;
+				} else {
+					onGeometryIcon = -1;
+				}
+			} else if(sliderStatus == 2) {
+				if(y <= 75 + 36 && y >= 75 - 36) {
+					if(x <= 280 && x >= -280) {
+						colorR = (x + 280) / 560.0f;
+					}
+				} else if(y <= 0 + 36 && y >= 0 - 36) {
+					if(x <= 280 && x >= -280) {
+						colorG = (x + 280) / 560.0f;
+					}
+				} else if(y <= -50 + 36 && y >= -75 - 36) {
+					if(x <= 280 && x >= -280) {
+						colorB = (x + 280) / 560.0f;
+					}
+				}
+				colorSelector.color = new Color(colorR, colorG, colorB);
+				redMarker.transform.localPosition = new Vector3(
+					-280.0f + (colorR * 560.0f),
+					redMarker.transform.localPosition.y,
+					redMarker.transform.localPosition.z
+				);
+				greenMarker.transform.localPosition = new Vector3(
+					-280.0f + (colorG * 560.0f),
+					greenMarker.transform.localPosition.y,
+					greenMarker.transform.localPosition.z
+				);
+				blueMarker.transform.localPosition = new Vector3(
+					-280.0f + (colorB * 560.0f),
+					blueMarker.transform.localPosition.y,
+					blueMarker.transform.localPosition.z
+				);
+
 			}
 		}
-		Debug.Log(onGeometryIcon);
 	}
 
 	public int getClick(Vector2 pos2d, Vector3 pos3d) {
@@ -94,7 +134,6 @@ public class ScrollControl : MonoBehaviour {
 		} else if(onGeometryIcon == 0) {
 			Debug.Log("Prism");
 		}
-
 		return onGeometryIcon;
 	}
 
