@@ -61,7 +61,7 @@ public class MainControl : MonoBehaviour {
 		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
 		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
 		active.GetComponent<MeshFilter> ().mesh.Optimize ();
-		MeshHelper.ApplyMeshCollider (active);
+		active = MeshHelper.ApplyMeshCollider (active);
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {

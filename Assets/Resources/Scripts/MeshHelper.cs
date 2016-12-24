@@ -21,7 +21,7 @@ public class MeshHelper {
 		return resultMesh;
 	}
 
-	public static void ApplyMeshCollider(GameObject gameObject) {
+	public static GameObject ApplyMeshCollider(GameObject gameObject) {
 		// first destroy automatically generated collider
 		Collider[] colliders = gameObject.GetComponents<Collider> ();
 		foreach(Collider c in colliders) {
@@ -32,5 +32,6 @@ public class MeshHelper {
 		gameObject.GetComponent<MeshCollider> ().sharedMesh = MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
 		gameObject.GetComponent<MeshCollider> ().convex = true;
 		gameObject.GetComponent<MeshCollider> ().isTrigger = true;
+		return gameObject;
 	}
 }
