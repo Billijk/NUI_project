@@ -92,15 +92,15 @@ public class ScrollControl : MonoBehaviour {
 					onGeometryIcon = -1;
 				}
 			} else if(sliderStatus == 2) {
-				if(y <= 75 + 36 && y >= 75 - 36) {
+				if(y <= 75 + 30 && y >= 75 - 30) {
 					if(x <= 280 && x >= -280) {
 						colorR = (x + 280) / 560.0f;
 					}
-				} else if(y <= 0 + 36 && y >= 0 - 36) {
+				} else if(y <= 0 + 30 && y >= 0 - 30) {
 					if(x <= 280 && x >= -280) {
 						colorG = (x + 280) / 560.0f;
 					}
-				} else if(y <= -50 + 36 && y >= -75 - 36) {
+				} else if(y <= -75 + 30 && y >= -75 - 30) {
 					if(x <= 280 && x >= -280) {
 						colorB = (x + 280) / 560.0f;
 					}
