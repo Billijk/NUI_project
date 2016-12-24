@@ -2,15 +2,14 @@
 using System.Collections;
 using Leap;
 
+[RequireComponent(typeof(HandController))]
+[RequireComponent(typeof(MainControl))]
 public class GestureParser : MonoBehaviour {
 
 	private const float GRAB_THRESHOLD = 0.9f;
-	private const float GRAB_DISTANCE = 0.5f;
-	private const float GRAB_STRENGTH = 50f;
 	private const float BASIC_Y_POSITION_FOR_2D = 175f;
-	private const int HAND_LAYER_INDEX = 8;
 	private const float THROW_VELOCITY_THRESHOLD = 500f;
-	private const float SLICE_VELOCITY_THRESHOLD = 1000f;
+	private const float SLICE_VELOCITY_THRESHOLD = 900f;
 	private const float DOWNWARD_ANGLE_THRESHOLD = 0.1f;
 
 	private HandController controller;
@@ -99,10 +98,11 @@ public class GestureParser : MonoBehaviour {
 				}
 
 				// slice
-				if (!inSlice && righthand.PalmNormal.Roll < -1.7 && righthand.PalmNormal.Roll > -1.9// vertical
+				if (!inSlice && righthand.PalmNormal.Roll < -1.35 && righthand.PalmNormal.Roll > -1.6 // vertical
 				    && righthand.PalmVelocity.y < -SLICE_VELOCITY_THRESHOLD) {
+					Debug.Log ("Slice");
 					inSlice = true;
-					main.RightHandSlice (new Plane (righthand.PalmNormal.ToUnity (), 
+					main.RightHandSlice (new Plane (controller.transform.TransformDirection(righthand.PalmNormal.ToUnity ()), 
 						controller.transform.TransformPoint (righthand.PalmPosition.ToUnityScaled ())));
 					return;
 				} else {
@@ -135,35 +135,9 @@ public class GestureParser : MonoBehaviour {
 	}
 
 	private void UpdateGrab(Hand hand) {
-//		Collider grabbed = null;
 		Vector3 handPosition = controller.transform.TransformPoint(hand.PalmPosition.ToUnityScaled ());
 		Vector handPositionFor2d = hand.StabilizedPalmPosition;
 		Vector2 handPosition2d = new Vector2 (handPositionFor2d.x, handPositionFor2d.y);
 		main.RightHandGrab (handPosition2d, handPosition);
-
-//		int layerMask = ~(1 << HAND_LAYER_INDEX);
-//		Collider[] closeThings = Physics.OverlapSphere (handPosition, GRAB_DISTANCE, layerMask);
-//		float shortestDist = GRAB_DISTANCE;
-//		for (int i = 0; i < closeThings.Length; ++i) {
-//			Vector3 dist = handPosition - closeThings [i].transform.position;
-//			if (closeThings [i].GetComponent<Rigidbody>() != null && dist.magnitude < shortestDist) {
-//				grabbed = closeThings [i];
-//				shortestDist = dist.magnitude;
-//			}
-//		}
-//
-//		if (grabbed != null) {
-//			main.RightHandGrab (grabbed.gameObject);
-//			//Vector3 delta = handPosition - grabbed.transform.position;
-//			//grabbed.GetComponent<Rigidbody> ().AddForce (delta * GRAB_STRENGTH);
-//		} else {
-//			// ray cast
-//			RaycastHit hit;
-//			if (Physics.Raycast (handPosition, hand.PalmNormal.ToUnity (), out hit, 15f, layerMask)) {
-//				main.RightHandGrab (hit.collider.gameObject);
-//			}
-//				
-//		}
-
 	}
 }

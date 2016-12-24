@@ -11,6 +11,10 @@ public class MainControl : MonoBehaviour {
 	private const float OBJECT_SCALING_SPEED = 0.005f;
 	private const float OBJECT_THRINK_LIMIT = 0.5f;
 	private const float OBJECT_ENLARGE_LIMIT = 4f;
+	private const float GRAB_SELECT_DISTANCE = 0.5f;
+	private const float DRAG_THRESHOLD = 0.2f;
+	private const float DRAG_STRENGTH = 50f;
+	private const int HAND_LAYER_INDEX = 8;
 
 	private bool isEnable = true;
 
@@ -27,12 +31,41 @@ public class MainControl : MonoBehaviour {
 	// current active object
 	private GameObject active = null;
 
+	// combine timer
+	private float timer = float.PositiveInfinity;
+
 	// Use this for initialization
 	void Start () {
 	}
 	
 	// Update is called once per frame
 	void Update () {
+		timer -= Time.deltaTime;
+		if (timer < 0f) {
+			CombineObjects ();
+			timer = float.PositiveInfinity;
+		}
+	}
+
+	// combine active object with touched ones
+	private void CombineObjects() {
+		Debug.Log ("Combine!");
+		GameObject[] touchedOnes = active.GetComponent<ObjectController> ().getTouchedObjects ();
+		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
+		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
+		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+		for (int i = 0; i < touchedOnes.Length; ++i) {
+			combine [i + 1].mesh = touchedOnes [i].GetComponent<MeshFilter> ().sharedMesh;
+			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+			Destroy (touchedOnes [i]);
+		}
+		active.transform.position = Vector3.zero;
+		active.transform.localScale = Vector3.one;
+		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
+		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
+		active.GetComponent<MeshFilter> ().mesh.Optimize ();
+		MeshHelper.ApplyMeshCollider (active);
+		active.GetComponent<ObjectController>().init();
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
@@ -101,21 +134,57 @@ public class MainControl : MonoBehaviour {
 			if(sliderPanel.getClick(pos2d, pos3d) != -1) {
 				Swipe(new Leap.Vector(-3, -1, 0), 1.0f);
 			}
+		} else {
+			timer = float.PositiveInfinity;	// cancel timer
+			Collider grabbed = null;
+			int layerMask = ~(1 << HAND_LAYER_INDEX);
+			Collider[] closeThings = Physics.OverlapSphere (pos3d, GRAB_SELECT_DISTANCE, layerMask);
+			float shortestDist = GRAB_SELECT_DISTANCE;
+			for (int i = 0; i < closeThings.Length; ++i) {
+				Vector3 dist = pos3d - closeThings [i].transform.position;
+				if (dist.magnitude < shortestDist) {
+					grabbed = closeThings [i];
+					shortestDist = dist.magnitude;
+				}
+			}
+			
+			if (grabbed != null) {
+				if (active != null && active != grabbed.gameObject) {
+					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
+				} else if (active != null) {
+					if (Vector3.Distance(pos3d, active.transform.position) > DRAG_THRESHOLD)
+						active.GetComponent<ObjectController>().moveTo(pos3d);
+				}
+				active = grabbed.gameObject;
+				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
+			}
+
 		}
 	}
 		
 	public void RightHandRelease() {
-		if(!isEnable) {
-			return;
+		// if collider intersects, start a timer: 
+		// if not grab again in 2s: combine objects
+		if(active != null && active.GetComponent<ObjectController>().combinable()) {
+			timer = 2f;
+			Debug.Log("Combine?");
 		}
-		Debug.Log ("Release");
 	}
 
 	public void RightHandSlice(Plane plane) {
-		if(!isEnable) {
-			return;
+		if (active != null) {
+			Debug.Log ("Cut!");
+			active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
+			TurboSlice.InfillConfiguration[] infillers = new TurboSlice.InfillConfiguration[2];
+			for (int i = 0; i < 2; ++i) {
+				infillers [i] = new TurboSlice.InfillConfiguration ();
+				infillers [i].material = active.GetComponent<Renderer> ().materials [i];
+				infillers [i].regionForInfill = new Rect (0, 0, 1, 1);
+			}
+			active.GetComponent<Sliceable> ().infillers = infillers;
+			TurboSlice.instance.splitByPlane (active, new Vector4 (plane.normal.x, plane.normal.y, plane.normal.z, plane.distance), true);
+			active = null;
 		}
-		Debug.Log ("Slice");
 	}
 
 	public void RightHandPoint(Vector2 target) {
