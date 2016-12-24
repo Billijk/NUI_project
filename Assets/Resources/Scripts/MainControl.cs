@@ -75,27 +75,32 @@ public class MainControl : MonoBehaviour {
 		}
 	}
 
-	public void RightHandGrab(GameObject grabbed) {
-		if (active != null)
-			active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Standard");
-		active = grabbed;
-		active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight
+	public void RightHandGrab(Vector2 pos2d, Vector3 pos3d) {
+//		if (active != null)
+//			active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Standard");
+//		active = grabbed;
+//		active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight
 	}
-
+		
 	public void RightHandRelease() {
+		Debug.Log ("Release");
 	}
 
 	public void RightHandSlice(Plane plane) {
 		Debug.Log ("Slice");
 	}
 
-	public void RightHandPoint(float x, float y) {
+	public void RightHandPoint(Vector2 target) {
 		PointedPos.enabled = true;
-		PointedPos.rectTransform.localPosition = new Vector3 (x, y);
+		PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
 	}
 
 	public void RightHandNotPoint() {
 		//PointedPos.enabled = false;
+	}
+
+	public void RightPalmMove(float delta) {
+		Debug.Log ("Palm Move " + delta.ToString());
 	}
 
 }

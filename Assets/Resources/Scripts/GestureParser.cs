@@ -7,15 +7,20 @@ public class GestureParser : MonoBehaviour {
 	private const float GRAB_THRESHOLD = 0.9f;
 	private const float GRAB_DISTANCE = 0.5f;
 	private const float GRAB_STRENGTH = 50f;
+	private const float BASIC_Y_POSITION_FOR_2D = 175f;
 	private const int HAND_LAYER_INDEX = 8;
+	private const float THROW_VELOCITY_THRESHOLD = 500f;
 	private const float SLICE_VELOCITY_THRESHOLD = 1000f;
+	private const float DOWNWARD_ANGLE_THRESHOLD = 0.1f;
 
 	private HandController controller;
 	private MainControl main;
 
 	private bool inSlice;
+	private bool inGrab;
 	private int lastGesture = -1;
-	private Leap.Vector LHBeginPosition;
+	private Leap.Vector RHBeginPosition = null;
+	private Leap.Vector LHBeginPosition = null;
 
 	// Use this for initialization
 	void Start () {
@@ -75,16 +80,22 @@ public class GestureParser : MonoBehaviour {
 
 			// parse right hand
 			if (righthand != null && righthand.Confidence > 0.3) {
+				FingerList fingers = righthand.Fingers;
 				// grab
 				if (righthand.GrabStrength > GRAB_THRESHOLD) {
+					inGrab = true;
 					UpdateGrab (righthand);
-				} else {
+					return;
+				} else if (inGrab) {
 					main.RightHandRelease ();
+					inGrab = false;
 				}
 
 				// pinch
-				if (righthand.PinchStrength > 0.2) {
+				if (righthand.PinchStrength > 0.2 &&
+					fingers[2].IsExtended && fingers[3].IsExtended && fingers[4].IsExtended) {
 					main.RightHandPinch (righthand.PinchStrength);
+					return;
 				}
 
 				// slice
@@ -93,53 +104,66 @@ public class GestureParser : MonoBehaviour {
 					inSlice = true;
 					main.RightHandSlice (new Plane (righthand.PalmNormal.ToUnity (), 
 						controller.transform.TransformPoint (righthand.PalmPosition.ToUnityScaled ())));
+					return;
 				} else {
 					inSlice = false;
 				}
 					
 				// point
-				FingerList extended = righthand.Fingers.Extended ();
-				if (extended.Count == 1 && extended [0].Type == Finger.FingerType.TYPE_INDEX) {
-					Finger indexFinger = extended [0];
+				if (fingers[1].IsExtended && (!fingers[2].IsExtended) && (!fingers[3].IsExtended) && (!fingers[4].IsExtended)) {
+					Finger indexFinger = fingers[1];
 					Vector target = indexFinger.StabilizedTipPosition - indexFinger.Direction * (100f / indexFinger.Direction.z);
-					main.RightHandPoint (target.x, target.y);
+					Vector3 targetFor2D = target.ToUnity ();
+					main.RightHandPoint (new Vector2(targetFor2D.x, targetFor2D.y - BASIC_Y_POSITION_FOR_2D));
+					return;
 				} else {
 					main.RightHandNotPoint ();
 				}
-			} else {
-				main.RightHandNotPoint ();
-				main.RightHandRelease ();
+
+				// palm vertically move
+				if (righthand.GrabStrength == 0 && righthand.PalmNormal.AngleTo(Vector.Down) < DOWNWARD_ANGLE_THRESHOLD) {
+					if (RHBeginPosition != null) {
+						main.RightPalmMove (righthand.PalmPosition.y - RHBeginPosition.y);
+					} else {
+						RHBeginPosition = righthand.PalmPosition;
+					}
+				} else {
+					RHBeginPosition = null;
+				}
 			}
 		}
 	}
 
 	private void UpdateGrab(Hand hand) {
-		Collider grabbed = null;
+//		Collider grabbed = null;
 		Vector3 handPosition = controller.transform.TransformPoint(hand.PalmPosition.ToUnityScaled ());
+		Vector3 handPositionFor2d = hand.StabilizedPalmPosition.ToUnity ();
+		Vector2 handPosition2d = new Vector2 (handPositionFor2d.x, handPositionFor2d.y - BASIC_Y_POSITION_FOR_2D);
+		main.RightHandGrab (handPosition2d, handPosition);
 
-		int layerMask = ~(1 << HAND_LAYER_INDEX);
-		Collider[] closeThings = Physics.OverlapSphere (handPosition, GRAB_DISTANCE, layerMask);
-		float shortestDist = GRAB_DISTANCE;
-		for (int i = 0; i < closeThings.Length; ++i) {
-			Vector3 dist = handPosition - closeThings [i].transform.position;
-			if (closeThings [i].GetComponent<Rigidbody>() != null && dist.magnitude < shortestDist) {
-				grabbed = closeThings [i];
-				shortestDist = dist.magnitude;
-			}
-		}
-
-		if (grabbed != null) {
-			main.RightHandGrab (grabbed.gameObject);
-			//Vector3 delta = handPosition - grabbed.transform.position;
-			//grabbed.GetComponent<Rigidbody> ().AddForce (delta * GRAB_STRENGTH);
-		} else {
-			// ray cast
-			RaycastHit hit;
-			if (Physics.Raycast (handPosition, hand.PalmNormal.ToUnity (), out hit, 15f, layerMask)) {
-				main.RightHandGrab (hit.collider.gameObject);
-			}
-				
-		}
+//		int layerMask = ~(1 << HAND_LAYER_INDEX);
+//		Collider[] closeThings = Physics.OverlapSphere (handPosition, GRAB_DISTANCE, layerMask);
+//		float shortestDist = GRAB_DISTANCE;
+//		for (int i = 0; i < closeThings.Length; ++i) {
+//			Vector3 dist = handPosition - closeThings [i].transform.position;
+//			if (closeThings [i].GetComponent<Rigidbody>() != null && dist.magnitude < shortestDist) {
+//				grabbed = closeThings [i];
+//				shortestDist = dist.magnitude;
+//			}
+//		}
+//
+//		if (grabbed != null) {
+//			main.RightHandGrab (grabbed.gameObject);
+//			//Vector3 delta = handPosition - grabbed.transform.position;
+//			//grabbed.GetComponent<Rigidbody> ().AddForce (delta * GRAB_STRENGTH);
+//		} else {
+//			// ray cast
+//			RaycastHit hit;
+//			if (Physics.Raycast (handPosition, hand.PalmNormal.ToUnity (), out hit, 15f, layerMask)) {
+//				main.RightHandGrab (hit.collider.gameObject);
+//			}
+//				
+//		}
 
 	}
 }
