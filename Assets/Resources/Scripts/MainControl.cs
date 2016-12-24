@@ -191,7 +191,16 @@ public class MainControl : MonoBehaviour {
 
 	public void RightHandPoint(Vector2 target) {
 		if(!isEnable) {
-			sliderPanel.movePointer(new Vector3(target.x, target.y));
+			if(sliderPanel.getSliderStatus() == 0) {
+				sliderPanel.selectGeometry(new Vector3(target.x, target.y));
+			} else if(sliderPanel.getSliderStatus() == 2) {
+				Color color = 
+					sliderPanel.setSurfaceColor(new Vector3(target.x, target.y));
+				if(active != null) {
+					MeshRenderer activeRenderer = active.GetComponent<MeshRenderer>();
+					activeRenderer.material.color = color;
+				}
+			}
 		}
 		//PointedPos.enabled = true;
 		//PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
@@ -226,6 +235,9 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void RightHandFlip() {
+		if(!isEnable) {
+			return;
+		}
 		if(active != null) {
 			Destroy(active);
 		}

@@ -75,6 +75,63 @@ public class ScrollControl : MonoBehaviour {
 		}
 	}
 
+	public void selectGeometry(Vector3 target) {
+		if(pointer.enabled) {
+			pointer.rectTransform.localPosition = target;
+			float x = target.x;
+			float y = target.y;
+
+			if(x <= -50 && x >= -250 && y <= 0 && y >= -200) {
+				onGeometryIcon = 1;
+			} else if(x >= 50 && x <= 250 && y <= 0 && y >= -200) {
+				onGeometryIcon = 2;
+			} else if(x >= -100 && x <= 100 && y >= 0 && y <= 200) {
+				onGeometryIcon = 0;
+			} else {
+				onGeometryIcon = -1;
+			}
+		}
+	}
+
+	public Color setSurfaceColor(Vector3 target) {
+		if(pointer.enabled) {
+			pointer.rectTransform.localPosition = target;
+			float x = target.x;
+			float y = target.y;
+
+			if(y <= 75 + 30 && y >= 75 - 30) {
+				if(x <= 280 && x >= -280) {
+					colorR = (x + 280) / 560.0f;
+				}
+			} else if(y <= 0 + 30 && y >= 0 - 30) {
+				if(x <= 280 && x >= -280) {
+					colorG = (x + 280) / 560.0f;
+				}
+			} else if(y <= -75 + 30 && y >= -75 - 30) {
+				if(x <= 280 && x >= -280) {
+					colorB = (x + 280) / 560.0f;
+				}
+			}
+			colorSelector.color = new Color(colorR, colorG, colorB, 1.0f);
+			redMarker.transform.localPosition = new Vector3(
+				-280.0f + (colorR * 560.0f),
+				redMarker.transform.localPosition.y,
+				redMarker.transform.localPosition.z
+			);
+			greenMarker.transform.localPosition = new Vector3(
+				-280.0f + (colorG * 560.0f),
+				greenMarker.transform.localPosition.y,
+				greenMarker.transform.localPosition.z
+			);
+			blueMarker.transform.localPosition = new Vector3(
+				-280.0f + (colorB * 560.0f),
+				blueMarker.transform.localPosition.y,
+				blueMarker.transform.localPosition.z
+			);
+		}
+		return colorSelector.color;
+	}
+
 	public void movePointer(Vector3 target) {
 		if(pointer.enabled) {
 			pointer.rectTransform.localPosition = target;
