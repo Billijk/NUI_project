@@ -12,9 +12,11 @@ public class MainControl : MonoBehaviour {
 	private const float OBJECT_THRINK_LIMIT = 0.5f;
 	private const float OBJECT_ENLARGE_LIMIT = 4f;
 	private const float GRAB_SELECT_DISTANCE = 0.5f;
-	private const float DRAG_THRESHOLD = 0.4f;
+	private const float DRAG_THRESHOLD = 0.2f;
 	private const float DRAG_STRENGTH = 50f;
 	private const int HAND_LAYER_INDEX = 8;
+
+	private bool isEnable = true;
 
 	public Camera mainCamera;
 	public Image PointedPos;
@@ -22,6 +24,9 @@ public class MainControl : MonoBehaviour {
 	// prefabs
 	public Transform cube;
 	public Transform sphere;
+
+	// slider
+	public ScrollControl sliderPanel;
 
 	// current active object
 	private GameObject active = null;
@@ -31,8 +36,6 @@ public class MainControl : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		active = GameObject.Find ("Cube");
-		timer = 3;
 	}
 	
 	// Update is called once per frame
@@ -46,7 +49,7 @@ public class MainControl : MonoBehaviour {
 
 	// combine active object with touched ones
 	private void CombineObjects() {
-		Debug.Log ("Combine");
+		Debug.Log ("Combine!");
 		GameObject[] touchedOnes = active.GetComponent<ObjectController> ().getTouchedObjects ();
 		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
 		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
@@ -62,9 +65,13 @@ public class MainControl : MonoBehaviour {
 		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
 		active.GetComponent<MeshFilter> ().mesh.Optimize ();
 		active = MeshHelper.ApplyMeshCollider (active);
+		active.GetComponent<ObjectController>().init();
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
+		if(!isEnable) {
+			return;
+		}
 		mainCamera.transform.RotateAround (Vector3.zero, Vector3.up, delta.x * CAMERA_ROTATE_SPEED);
 		transform.RotateAround(Vector3.zero, Vector3.up, delta.x * CAMERA_ROTATE_SPEED);
 		if (mainCamera.transform.eulerAngles.x > 5 && mainCamera.transform.eulerAngles.x < 85) {
@@ -84,21 +91,34 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void Swipe(Leap.Vector dir, float speed) {
+		Vector3 oldCamaraPos = mainCamera.transform.position;
+
 		bool horizontal = Mathf.Abs (dir.x) > Mathf.Abs (dir.y);
 		if (horizontal) {
-			if (dir.x > 0)
-				Instantiate (cube, new Vector3 (0, 1f, 0f), Quaternion.identity);
-			else
-				Instantiate (sphere, new Vector3 (0, 1f, 0f), Quaternion.identity);
+			if(dir.x > 0) {
+				sliderPanel.swipeSlider(0);
+			} else {
+				sliderPanel.swipeSlider(1);
+			}
 		}
-		
+		if(sliderPanel.getSliderStatus() != 1) {
+			isEnable = false;
+		} else {
+			isEnable = true;
+		}
 	}
 
 	public void Tap() {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Tap");
 	}
 
 	public void RightHandPinch(float pinchStrength) {
+		if(!isEnable) {
+			return;
+		}
 		if (active != null) {
 			if (pinchStrength > 0.9 && active.transform.localScale.magnitude > OBJECT_THRINK_LIMIT)
 				// shrink
@@ -110,37 +130,45 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void RightHandGrab(Vector2 pos2d, Vector3 pos3d) {
-		timer = float.PositiveInfinity;	// cancel timer
-		Collider grabbed = null;
-		int layerMask = ~(1 << HAND_LAYER_INDEX);
-		Collider[] closeThings = Physics.OverlapSphere (pos3d, GRAB_SELECT_DISTANCE, layerMask);
-		float shortestDist = GRAB_SELECT_DISTANCE;
-		for (int i = 0; i < closeThings.Length; ++i) {
-			Vector3 dist = pos3d - closeThings [i].transform.position;
-			if (dist.magnitude < shortestDist) {
-				grabbed = closeThings [i];
-				shortestDist = dist.magnitude;
+		if(!isEnable) {
+			if(sliderPanel.getClick(pos2d, pos3d) != -1) {
+				Swipe(new Leap.Vector(-3, -1, 0), 1.0f);
 			}
-		}
-
-		if (grabbed != null) {
-			if (active != null && active != grabbed.gameObject) {
-				active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
-			} else if (active != null) {
-				if (Vector3.Distance(pos3d, active.transform.position) > DRAG_THRESHOLD)
-					active.GetComponent<ObjectController>().moveTo(pos3d);
+		} else {
+			timer = float.PositiveInfinity;	// cancel timer
+			Collider grabbed = null;
+			int layerMask = ~(1 << HAND_LAYER_INDEX);
+			Collider[] closeThings = Physics.OverlapSphere (pos3d, GRAB_SELECT_DISTANCE, layerMask);
+			float shortestDist = GRAB_SELECT_DISTANCE;
+			for (int i = 0; i < closeThings.Length; ++i) {
+				Vector3 dist = pos3d - closeThings [i].transform.position;
+				if (dist.magnitude < shortestDist) {
+					grabbed = closeThings [i];
+					shortestDist = dist.magnitude;
+				}
 			}
-			active = grabbed.gameObject;
-			active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
-		}
+			
+			if (grabbed != null) {
+				if (active != null && active != grabbed.gameObject) {
+					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
+				} else if (active != null) {
+					if (Vector3.Distance(pos3d, active.transform.position) > DRAG_THRESHOLD)
+						active.GetComponent<ObjectController>().moveTo(pos3d);
+				}
+				active = grabbed.gameObject;
+				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
+			}
 
+		}
 	}
 		
 	public void RightHandRelease() {
 		// if collider intersects, start a timer: 
 		// if not grab again in 2s: combine objects
-		if (active != null && active.GetComponent<ObjectController>().combinable())
+		if(active != null && active.GetComponent<ObjectController>().combinable()) {
 			timer = 2f;
+			Debug.Log("Combine?");
+		}
 	}
 
 	public void RightHandSlice(Plane plane) {
@@ -160,15 +188,24 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void RightHandPoint(Vector2 target) {
-		PointedPos.enabled = true;
-		PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
+		if(!isEnable) {
+			sliderPanel.movePointer(new Vector3(target.x, target.y));
+		}
+		//PointedPos.enabled = true;
+		//PointedPos.rectTransform.localPosition = new Vector3(target.x, target.y);
 	}
 
 	public void RightHandNotPoint() {
+		if(!isEnable) {
+			return;
+		}
 		//PointedPos.enabled = false;
 	}
 
 	public void RightPalmMove(float delta) {
+		if(!isEnable) {
+			return;
+		}
 		Debug.Log ("Palm Move " + delta.ToString());
 	}
 

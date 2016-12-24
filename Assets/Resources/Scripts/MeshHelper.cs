@@ -29,9 +29,9 @@ public class MeshHelper {
 		}
 		// replace with a mesh collider
 		gameObject.AddComponent<MeshCollider> ();
-		gameObject.GetComponent<MeshCollider> ().sharedMesh = MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
 		gameObject.GetComponent<MeshCollider> ().convex = true;
 		gameObject.GetComponent<MeshCollider> ().isTrigger = true;
+		gameObject.GetComponent<MeshCollider> ().sharedMesh = MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
 		return gameObject;
 	}
 }
