@@ -129,20 +129,10 @@ public class GestureParser : MonoBehaviour {
 					} else {
 						RHBeginPosition = righthand.PalmPosition;
 					}
-
-					if(flipPalm) {
-						main.RightHandFlip();
-						flipPalm = false;
-					}
 				} else {
 					RHBeginPosition = null;
 				}
-
-				// palm flip
-				if(righthand.GrabStrength <= 0.3f &&
-				   righthand.PalmNormal.AngleTo(Vector.Up) < DOWNWARD_ANGLE_THRESHOLD) {
-					flipPalm = true;
-				}
+					
 			}
 		}
 	}

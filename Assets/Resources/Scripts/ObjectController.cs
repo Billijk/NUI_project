@@ -7,11 +7,12 @@ public class ObjectController : MonoBehaviour {
 	
 	private ArrayList touchedObjects;
 	private Vector3 destination;
+	private GameObject parent;
 
 	// Use this for initialization
 	void Start () {
 		touchedObjects = new ArrayList ();
-		init();
+		init(gameObject);
 	}
 	
 	// Update is called once per frame
@@ -19,9 +20,10 @@ public class ObjectController : MonoBehaviour {
 		GetComponent<Rigidbody>().velocity = (destination - transform.position) * Time.deltaTime * velocity;
 	}
 
-	public void init() {
+	public void init(GameObject _parent) {
 		touchedObjects.Clear();
 		destination = transform.position;
+		parent = _parent;
 	}
 
 	public GameObject[] getTouchedObjects() {
@@ -30,6 +32,10 @@ public class ObjectController : MonoBehaviour {
 			res [i] = (GameObject) touchedObjects [i];
 		}
 		return res;
+	}
+
+	public GameObject getParent() {
+		return parent;
 	}
 
 	public bool combinable() {
@@ -43,11 +49,11 @@ public class ObjectController : MonoBehaviour {
 	public void OnTriggerEnter(Collider other) {
 		Debug.Log("Collide");
 		if (other.gameObject.layer != 8)
-			touchedObjects.Add (other.gameObject);
+			touchedObjects.Add (other.gameObject.GetComponent<ObjectController>().parent);
 	}
 
 	public void OnTriggerExit(Collider other) {
 		if (other.gameObject.layer != 8)
-			touchedObjects.Remove (other.gameObject);
+			touchedObjects.Remove (other.gameObject.GetComponent<ObjectController>().parent);
 	}
 }

@@ -15,6 +15,8 @@ public class MainControl : MonoBehaviour {
 	private const float DRAG_THRESHOLD = 0.2f;
 	private const float DRAG_STRENGTH = 50f;
 	private const int HAND_LAYER_INDEX = 8;
+	private Vector3 INITIAL_CAMERA_POS = new Vector3 (0, 2.23f, -3.18f);
+	private Vector3 INITIAL_CAMERA_ROT = new Vector3 (35f, 0, 0);
 
 	private bool isEnable = true;
 
@@ -45,27 +47,41 @@ public class MainControl : MonoBehaviour {
 			CombineObjects ();
 			timer = float.PositiveInfinity;
 		}
+
+		if (Input.GetKey (KeyCode.Delete)) {
+			if (active != null)
+				Destroy (active);
+		}
+
+		if (Input.GetKey (KeyCode.R)) {
+			mainCamera.transform.position = INITIAL_CAMERA_POS;
+			mainCamera.transform.eulerAngles = INITIAL_CAMERA_ROT;
+		}
 	}
 
 	// combine active object with touched ones
 	private void CombineObjects() {
 		Debug.Log ("Combine!");
 		GameObject[] touchedOnes = active.GetComponent<ObjectController> ().getTouchedObjects ();
-		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
-		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
-		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
 		for (int i = 0; i < touchedOnes.Length; ++i) {
-			combine [i + 1].mesh = touchedOnes [i].GetComponent<MeshFilter> ().sharedMesh;
-			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
-			Destroy (touchedOnes [i]);
+			touchedOnes [i].transform.SetParent (active.transform);
+			touchedOnes [i].GetComponent<ObjectController>().init (active);
 		}
-		active.transform.position = Vector3.zero;
-		active.transform.localScale = Vector3.one;
-		active.GetComponent<ObjectController>().init();
-		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
-		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
-		active.GetComponent<MeshFilter> ().mesh.Optimize ();
-		MeshHelper.ApplyMeshCollider (active);
+//		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
+//		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
+//		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+//		for (int i = 0; i < touchedOnes.Length; ++i) {
+//			combine [i + 1].mesh = touchedOnes [i].GetComponent<MeshFilter> ().sharedMesh;
+//			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+//			Destroy (touchedOnes [i]);
+//		}
+//		active.transform.position = Vector3.zero;
+//		active.transform.localScale = Vector3.one;
+//		active.GetComponent<ObjectController>().init();
+//		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
+//		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
+//		active.GetComponent<MeshFilter> ().mesh.Optimize ();
+//		MeshHelper.ApplyMeshCollider (active);
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
@@ -130,7 +146,7 @@ public class MainControl : MonoBehaviour {
 
 	public void RightHandGrab(Vector2 pos2d, Vector3 pos3d) {
 		if(!isEnable) {
-			if(sliderPanel.getClick(pos2d, pos3d) != -1) {
+			if(sliderPanel.getSliderStatus() == 0 && sliderPanel.getClick(pos2d, pos3d) != -1) {
 				Swipe(new Leap.Vector(-3, -1, 0), 1.0f);
 			}
 		} else {
@@ -151,7 +167,7 @@ public class MainControl : MonoBehaviour {
 				if (active != null && active != grabbed.gameObject) {
 					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
 				} 
-				active = grabbed.gameObject;
+				active = grabbed.gameObject.GetComponent<ObjectController>().getParent();
 				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
 			}
 
@@ -234,12 +250,4 @@ public class MainControl : MonoBehaviour {
 		}
 	}
 
-	public void RightHandFlip() {
-		if(!isEnable) {
-			return;
-		}
-		if(active != null) {
-			Destroy(active);
-		}
-	}
 }
