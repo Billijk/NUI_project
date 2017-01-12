@@ -33,6 +33,7 @@ public class MainControl : MonoBehaviour {
 
 	// combine timer
 	private float timer = float.PositiveInfinity;
+	private float swipeTimer = 0;
 
 	// Use this for initialization
 	void Start () {
@@ -41,6 +42,7 @@ public class MainControl : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		timer -= Time.deltaTime;
+		swipeTimer -= Time.deltaTime;
 		if (timer < 0f) {
 			CombineObjects ();
 			timer = float.PositiveInfinity;
@@ -51,6 +53,16 @@ public class MainControl : MonoBehaviour {
 	private void CombineObjects() {
 		Debug.Log ("Combine!");
 		GameObject[] touchedOnes = active.GetComponent<ObjectController> ().getTouchedObjects ();
+		// calculate new center point
+		Vector3 newCenter = active.transform.position;
+		foreach (GameObject obj in touchedOnes)
+			newCenter += obj.transform.position;
+		newCenter /= (touchedOnes.Length + 1);
+		// translate objects to origin respectively
+		active.transform.position -= newCenter;
+		foreach(GameObject obj in touchedOnes)
+			obj.transform.position -= newCenter;
+		// combine mesh
 		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
 		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
 		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
@@ -59,13 +71,14 @@ public class MainControl : MonoBehaviour {
 			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
 			Destroy (touchedOnes [i]);
 		}
-		active.transform.position = Vector3.zero;
 		active.transform.localScale = Vector3.one;
 		active.GetComponent<ObjectController>().init();
 		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
 		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
 		active.GetComponent<MeshFilter> ().mesh.Optimize ();
 		MeshHelper.ApplyMeshCollider (active);
+		// translate back
+		active.GetComponent<ObjectController>().moveTo(newCenter);
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
@@ -91,7 +104,9 @@ public class MainControl : MonoBehaviour {
 	}
 
 	public void Swipe(Leap.Vector dir, float speed) {
-
+		if(swipeTimer > 0) {
+			return;
+		}
 		bool horizontal = Mathf.Abs (dir.x) > Mathf.Abs (dir.y);
 		if (horizontal) {
 			if(dir.x > 0) {
@@ -99,6 +114,7 @@ public class MainControl : MonoBehaviour {
 			} else {
 				sliderPanel.swipeSlider(1);
 			}
+			swipeTimer = 1.0f;
 		}
 		if(sliderPanel.getSliderStatus() != 1) {
 			isEnable = false;
@@ -240,6 +256,7 @@ public class MainControl : MonoBehaviour {
 		}
 		if(active != null) {
 			Destroy(active);
+			active = null;
 		}
 	}
 }
