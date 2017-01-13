@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using System.Collections;
 
 public class ScrollControl : MonoBehaviour {
+	private const int COLOR_STRIPE = 75;
+
 	private int sliderStatus = 0;
 	private int onGeometryIcon = -1;
 	private bool needMove = false;
@@ -99,20 +101,10 @@ public class ScrollControl : MonoBehaviour {
 			float x = target.x;
 			float y = target.y;
 
-			if(y <= 75 + 30 && y >= 75 - 30) {
-				if(x <= 280 && x >= -280) {
-					colorR = (x + 280) / 560.0f;
-				}
-			} else if(y <= 0 + 30 && y >= 0 - 30) {
-				if(x <= 280 && x >= -280) {
-					colorG = (x + 280) / 560.0f;
-				}
-			} else if(y <= -75 + 30 && y >= -75 - 30) {
-				if(x <= 280 && x >= -280) {
-					colorB = (x + 280) / 560.0f;
-				}
-			}
-			colorSelector.color = new Color(colorR, colorG, colorB, 1.0f);
+			float angle = Mathf.Atan2(y, x) + Mathf.PI;
+			Debug.Log(angle);
+			float distance = Mathf.Sqrt(x * x + y * y);
+			colorSelector.color = Color.HSVToRGB(angle / 2 / Mathf.PI, distance / 125, 1);
 			redMarker.transform.localPosition = new Vector3(
 				-280.0f + (colorR * 560.0f),
 				redMarker.transform.localPosition.y,
@@ -149,20 +141,9 @@ public class ScrollControl : MonoBehaviour {
 					onGeometryIcon = -1;
 				}
 			} else if(sliderStatus == 2) {
-				if(y <= 75 + 30 && y >= 75 - 30) {
-					if(x <= 280 && x >= -280) {
-						colorR = (x + 280) / 560.0f;
-					}
-				} else if(y <= 0 + 30 && y >= 0 - 30) {
-					if(x <= 280 && x >= -280) {
-						colorG = (x + 280) / 560.0f;
-					}
-				} else if(y <= -75 + 30 && y >= -75 - 30) {
-					if(x <= 280 && x >= -280) {
-						colorB = (x + 280) / 560.0f;
-					}
-				}
-				colorSelector.color = new Color(colorR, colorG, colorB);
+				float angle = Mathf.Atan2(y, x);
+				float distance = Mathf.Sqrt(x * x + y * y);
+				colorSelector.color = Color.HSVToRGB(angle / 2 / Mathf.PI, distance / 125, 1);
 				redMarker.transform.localPosition = new Vector3(
 					-280.0f + (colorR * 560.0f),
 					redMarker.transform.localPosition.y,
