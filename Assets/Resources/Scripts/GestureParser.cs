@@ -7,7 +7,7 @@ using Leap;
 public class GestureParser : MonoBehaviour {
 
 	private const float GRAB_THRESHOLD = 0.9f;
-	private const float DRAG_VELOCITY_THRESHOLD = 100f;
+	private const float DRAG_VELOCITY_THRESHOLD = 150f;
 	private const float BASIC_Y_POSITION_FOR_2D = 175f;
 	private const float THROW_VELOCITY_THRESHOLD = 500f;
 	private const float SLICE_VELOCITY_THRESHOLD = 900f;
@@ -16,9 +16,9 @@ public class GestureParser : MonoBehaviour {
 	private HandController controller;
 	private MainControl main;
 
-	private bool flipPalm = false;
 	private bool inSlice;
 	private bool inGrab;
+	private bool inDrag;
 	private int lastGesture = -1;
 	private Leap.Vector RHBeginPosition = null;
 	private Leap.Vector LHBeginPosition = null;
@@ -89,6 +89,7 @@ public class GestureParser : MonoBehaviour {
 				} else if (inGrab) {
 					main.RightHandRelease ();
 					inGrab = false;
+					inDrag = false;
 				}
 
 				// pinch
@@ -140,9 +141,11 @@ public class GestureParser : MonoBehaviour {
 	private void UpdateGrab(Hand hand) {
 		Vector3 handPosition = controller.transform.TransformPoint(hand.PalmPosition.ToUnityScaled ());
 
-		if (hand.PalmVelocity.Magnitude > DRAG_VELOCITY_THRESHOLD) {
+		if (inDrag || hand.PalmVelocity.Magnitude > DRAG_VELOCITY_THRESHOLD) {
+			inDrag = true;
 			Vector3 handVelocity = controller.transform.TransformDirection (hand.PalmVelocity.ToUnityScaled());
 			main.RightHandDrag (handPosition, handVelocity);
+			return;
 		}
 
 		Vector handPositionFor2d = hand.StabilizedPalmPosition;

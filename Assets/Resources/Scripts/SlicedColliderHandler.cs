@@ -7,6 +7,7 @@ public class SlicedColliderHandler : AbstractSliceHandler {
 		// here I need to recalculate mesh collider to fit sliced object
 		for (int i = 0; i < results.Length; ++ i) {
 			MeshHelper.ApplyMeshCollider (results[i]);
+			Debug.Log (results [i].GetComponent<MeshCollider> ().sharedMesh.triangles.Length);
 		}
 	}
 }

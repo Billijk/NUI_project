@@ -5,7 +5,7 @@ using System.Collections;
 public class ScrollControl : MonoBehaviour {
 	private const int COLOR_STRIPE = 75;
 
-	private int sliderStatus = 0;
+	private int sliderStatus = 1;
 	private int onGeometryIcon = -1;
 	private bool needMove = false;
 	private float moveSpeed = 0.0f;
@@ -102,7 +102,7 @@ public class ScrollControl : MonoBehaviour {
 			float y = target.y;
 
 			float angle = Mathf.Atan2(y, x) + Mathf.PI;
-			Debug.Log(angle);
+			//Debug.Log(angle);
 			float distance = Mathf.Sqrt(x * x + y * y);
 			colorSelector.color = Color.HSVToRGB(angle / 2 / Mathf.PI, distance / 125, 1);
 			redMarker.transform.localPosition = new Vector3(

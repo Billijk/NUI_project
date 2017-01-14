@@ -18,6 +18,7 @@ public class MeshHelper {
 		resultMesh.vertices = outVertices;
 		resultMesh.triangles = outTriangles;
 		resultMesh.RecalculateNormals ();
+		Debug.Log (resultMesh.triangles.Length);
 		return resultMesh;
 	}
 
@@ -28,9 +29,14 @@ public class MeshHelper {
 			GameObject.Destroy (c);
 		}
 		// replace with a mesh collider
-		gameObject.AddComponent<MeshCollider> ();
-		gameObject.GetComponent<MeshCollider> ().convex = true;
-		gameObject.GetComponent<MeshCollider> ().isTrigger = true;
-		gameObject.GetComponent<MeshCollider> ().sharedMesh = MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().mesh, 255);
+		MeshCollider collider = gameObject.AddComponent<MeshCollider> () as MeshCollider;
+		// mesh is simplified to ensure it has less than 256 faces
+		//if (gameObject.GetComponent<MeshCollider> ().sharedMesh != null) {
+		collider.sharedMesh = null;
+		//}
+		collider.sharedMesh = 
+			MeshHelper.Simplify(gameObject.GetComponent<MeshFilter> ().sharedMesh, 255);
+		collider.convex = true;
+		collider.isTrigger = true;
 	}
 }

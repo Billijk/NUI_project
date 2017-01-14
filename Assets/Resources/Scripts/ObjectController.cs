@@ -7,23 +7,29 @@ public class ObjectController : MonoBehaviour {
 	
 	private ArrayList touchedObjects;
 	private Vector3 destination;
-	private GameObject parent;
+	//private Vector3 relativeVec;
+	//private GameObject parent;
 
 	// Use this for initialization
 	void Start () {
 		touchedObjects = new ArrayList ();
-		init(gameObject);
+		MeshHelper.ApplyMeshCollider (gameObject);
+		init();
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		GetComponent<Rigidbody>().velocity = (destination - transform.position) * Time.deltaTime * velocity;
+		GetComponent<Rigidbody>().velocity = (destination - transform.localPosition) * Time.deltaTime * velocity;
+		GetComponent<MeshCollider> ().convex = true;
+		GetComponent<MeshCollider> ().isTrigger = true;
+//		if (parent != gameObject)
+//			destination = relativeVec;
+//			//destination += (relativeVec - transform.localPosition);
 	}
 
-	public void init(GameObject _parent) {
+	public void init() {
 		touchedObjects.Clear();
 		destination = transform.position;
-		parent = _parent;
 	}
 
 	public GameObject[] getTouchedObjects() {
@@ -34,9 +40,9 @@ public class ObjectController : MonoBehaviour {
 		return res;
 	}
 
-	public GameObject getParent() {
-		return parent;
-	}
+//	public GameObject getParent() {
+//		return parent;
+//	}
 
 	public bool combinable() {
 		return touchedObjects.Count != 0;
@@ -46,14 +52,22 @@ public class ObjectController : MonoBehaviour {
 		this.destination = destination;
 	}
 
+	public void notifyDestroy() {
+		foreach (GameObject other in touchedObjects) {
+			other.GetComponent<ObjectController> ().OnTriggerExit (GetComponent<MeshCollider>());
+		}
+	}
+
 	public void OnTriggerEnter(Collider other) {
 		Debug.Log("Collide");
 		if (other.gameObject.layer != 8)
-			touchedObjects.Add (other.gameObject.GetComponent<ObjectController>().parent);
+			touchedObjects.Add (other.gameObject);
+			//touchedObjects.Add (other.gameObject.GetComponent<ObjectController>().parent);
 	}
 
 	public void OnTriggerExit(Collider other) {
 		if (other.gameObject.layer != 8)
-			touchedObjects.Remove (other.gameObject.GetComponent<ObjectController>().parent);
+			touchedObjects.Remove (other.gameObject);
+			//touchedObjects.Remove (other.gameObject.GetComponent<ObjectController>().parent);
 	}
 }

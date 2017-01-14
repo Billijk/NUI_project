@@ -51,13 +51,17 @@ public class MainControl : MonoBehaviour {
 		}
 
 		if (Input.GetKey (KeyCode.Delete)) {
-			if (active != null)
+			if (active != null) {
+				active.GetComponent<ObjectController> ().notifyDestroy ();
 				Destroy (active);
+			}
 		}
 
 		if (Input.GetKey (KeyCode.R)) {
 			mainCamera.transform.position = INITIAL_CAMERA_POS;
 			mainCamera.transform.eulerAngles = INITIAL_CAMERA_ROT;
+			transform.position = mainCamera.transform.position + mainCamera.transform.forward * 2 + Vector3.down;
+			transform.eulerAngles = Vector3.zero;
 		}
 	}
 
@@ -65,36 +69,36 @@ public class MainControl : MonoBehaviour {
 	private void CombineObjects() {
 		Debug.Log ("Combine!");
 		GameObject[] touchedOnes = active.GetComponent<ObjectController> ().getTouchedObjects ();
-		for (int i = 0; i < touchedOnes.Length; ++i) {
-			touchedOnes [i].transform.SetParent (active.transform);
-			touchedOnes [i].GetComponent<ObjectController>().init (active);
-		}
-//		// calculate new center point
-//		Vector3 newCenter = active.transform.position;
-//		foreach (GameObject obj in touchedOnes)
-//			newCenter += obj.transform.position;
-//		newCenter /= (touchedOnes.Length + 1);
-//		// translate objects to origin respectively
-//		active.transform.position -= newCenter;
-//		foreach(GameObject obj in touchedOnes)
-//			obj.transform.position -= newCenter;
-//		// combine mesh
-//		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
-//		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
-//		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
 //		for (int i = 0; i < touchedOnes.Length; ++i) {
-//			combine [i + 1].mesh = touchedOnes [i].GetComponent<MeshFilter> ().sharedMesh;
-//			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
-//			Destroy (touchedOnes [i]);
+//			touchedOnes [i].transform.SetParent (active.transform);
+//			touchedOnes [i].GetComponent<ObjectController>().init (active);
 //		}
-//		active.transform.localScale = Vector3.one;
-//		active.GetComponent<ObjectController>().init();
-//		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
-//		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
-//		active.GetComponent<MeshFilter> ().mesh.Optimize ();
-//		MeshHelper.ApplyMeshCollider (active);
-//		// translate back
-//		active.GetComponent<ObjectController>().moveTo(newCenter);
+		// calculate new center point
+		Vector3 newCenter = active.transform.position;
+		foreach (GameObject obj in touchedOnes)
+			newCenter += obj.transform.position;
+		newCenter /= (touchedOnes.Length + 1);
+		// translate objects to origin respectively
+		active.transform.position -= newCenter;
+		foreach(GameObject obj in touchedOnes)
+			obj.transform.position -= newCenter;
+		// combine mesh
+		CombineInstance[] combine = new CombineInstance[touchedOnes.Length + 1];
+		combine [0].mesh = active.GetComponent<MeshFilter> ().sharedMesh;
+		combine [0].transform = active.GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+		for (int i = 0; i < touchedOnes.Length; ++i) {
+			combine [i + 1].mesh = touchedOnes [i].GetComponent<MeshFilter> ().sharedMesh;
+			combine [i + 1].transform = touchedOnes [i].GetComponent<MeshFilter> ().transform.localToWorldMatrix;
+			Destroy (touchedOnes [i]);
+		}
+		active.transform.localScale = Vector3.one;
+		active.GetComponent<ObjectController>().init();
+		active.GetComponent<MeshFilter> ().mesh = new Mesh ();
+		active.GetComponent<MeshFilter> ().mesh.CombineMeshes (combine);
+		active.GetComponent<MeshFilter> ().mesh.Optimize ();
+		MeshHelper.ApplyMeshCollider (active);
+		// translate back
+		active.GetComponent<ObjectController>().moveTo(newCenter);
 	}
 
 	public void LeftHandMove(Leap.Vector delta) {
@@ -181,17 +185,21 @@ public class MainControl : MonoBehaviour {
 			
 			if (grabbed != null) {
 				if (active != null && active != grabbed.gameObject) {
-					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
+					active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard (Vertex Color)");
 				} 
-				active = grabbed.gameObject.GetComponent<ObjectController>().getParent();
-				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight				
+				active = grabbed.gameObject;
+				//active = grabbed.gameObject.GetComponent<ObjectController>().getParent();
+				active.GetComponent<Renderer> ().materials[1].shader = Shader.Find ("Outlined/Silhouette Only"); // highlight	
+//				foreach (Renderer renderer in active.GetComponentsInChildren<Renderer>()) {
+//					renderer.materials [1].shader = Shader.Find ("Outlined/Silhouette Only");
+//				}
 			}
 
 		}
 	}
 
 	public void RightHandDrag(Vector3 pos3d, Vector3 v) {
-		if (active != null) {
+		if (isEnable && active != null) {
 			active.GetComponent<ObjectController>().moveTo(pos3d);
 		}
 	}
@@ -208,7 +216,7 @@ public class MainControl : MonoBehaviour {
 	public void RightHandSlice(Plane plane) {
 		if (active != null) {
 			Debug.Log ("Cut!");
-			active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard");
+			active.GetComponent<Renderer> ().materials [1].shader = Shader.Find ("Standard (Vertex Color)");
 			TurboSlice.InfillConfiguration[] infillers = new TurboSlice.InfillConfiguration[2];
 			for (int i = 0; i < 2; ++i) {
 				infillers [i] = new TurboSlice.InfillConfiguration ();
@@ -229,8 +237,15 @@ public class MainControl : MonoBehaviour {
 				Color color = 
 					sliderPanel.setSurfaceColor(new Vector3(target.x, target.y));
 				if(active != null) {
-					MeshRenderer activeRenderer = active.GetComponent<MeshRenderer>();
-					activeRenderer.material.color = color;
+					Mesh m = active.GetComponent<MeshFilter> ().sharedMesh;
+					Color[] colors = new Color[m.vertexCount];
+					for (int i = 0; i < m.vertexCount; ++i)
+						colors [i] = color;
+					m.colors = colors;
+//					active.GetComponent<MeshRenderer> ().material.color = color;
+//					MeshRenderer[] activeRenderers = active.GetComponentsInChildren<MeshRenderer>();
+//					foreach (MeshRenderer renderer in activeRenderers)
+//						renderer.material.color = color;
 				}
 			}
 		}
